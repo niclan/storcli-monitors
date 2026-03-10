@@ -57,8 +57,8 @@ sub get_controllers {
     my @controllers;
     if (ref $data->{Controllers} eq 'ARRAY') {
         foreach my $ctrl (@{$data->{Controllers}}) {
-            my $response = $ctrl->{Response Data} or next;
-            my $overview = $response->{IT System Overview} or next;
+            my $response = $ctrl->{'Response Data'} or next;
+            my $overview = $response->{'IT System Overview'} or next;
             
             foreach my $item (@{$overview}) {
                 push @controllers, {
@@ -87,13 +87,13 @@ sub get_temperatures {
     
     if (ref $data->{Controllers} eq 'ARRAY') {
         foreach my $ctrl (@{$data->{Controllers}}) {
-            my $response = $ctrl->{Response Data} or next;
-            my $props = $response->{Controller Properties} or next;
+            my $response = $ctrl->{'Response Data'} or next;
+            my $props = $response->{'Controller Properties'} or next;
             
-            my $ctl_id = $ctrl->{Command Status}->{Controller};
+            my $ctl_id = $ctrl->{'Command Status'}->{Controller};
             
             foreach my $prop (@{$props}) {
-                if ($prop->{Ctrl_Prop} =~ /temperature/i) {
+                if ($prop->{'Ctrl_Prop'} =~ /temperature/i) {
                     $temps{$ctl_id} = $prop->{Value};
                 }
             }
