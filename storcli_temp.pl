@@ -6,27 +6,37 @@ use JSON;
 
 # Munin plugin for monitoring MegaRAID controller temperatures
 
-my $STORCLI;
-
+my $STORCLI = find_storcli();
+    
 sub find_storcli {
-    if (-x '/usr/bin/storcli64') {
-        return '/usr/bin/storcli64';
-    } elsif (-x '/opt/MegaRAID/storcli/storcli64') {
-        return '/opt/MegaRAID/storcli/storcli64';
+    my @bin = qw[/usr/bin/storcli64 /opt/MegaRAID/storcli/storcli64];
+
+    for my $b (@bin) {
+	return "sudo $b" if -x $b;
     }
     return undef;
 }
 
 sub autoconf {
-    $STORCLI = find_storcli();
-    if ($STORCLI) {
-        print "yes\n";
-    } else {
-        print "no (storcli64 not found)\n";
+    if (!$STORCLI) {
+        print "no (storcli64 not found, are we running as root?)\n";
+	exit 1;
     }
+    my @c = get_controllers();
+    if (scalar(@c) == 0) {
+	print "no (no controllers found)\n";
+	exit 1;
+    }
+    print "yes\n";
+    exit 0;
 }
 
 sub config {
+    if (!$STORCLI) {
+	print "graph_title No storcli64 found\n";
+	exit 0;
+    }
+	    
     print "graph_title MegaRAID Controller Temperatures\n";
     print "graph_vlabel Temperature (°C)\n";
     print "graph_category raid\n";
@@ -37,17 +47,16 @@ sub config {
         my $ctl_id = $ctrl->{ctl};
         my $model = $ctrl->{model};
         my $adapter = $ctrl->{adapter};
-        print "temp_ctl$ctl_id.label Controller $ctl_id: $model ($adapter)\n";
+	$adapter =~ s/^\s+//;
+	print "temp_ctl$ctl_id.label Controller $ctl_id\n";
+        print "temp_ctl$ctl_id.extinfo Controller $ctl_id: $model $adapter\n";
         print "temp_ctl$ctl_id.type GAUGE\n";
-        print "temp_ctl$ctl_id.warning 70\n";
-        print "temp_ctl$ctl_id.critical 80\n";
+        print "temp_ctl$ctl_id.warning 80\n";
+        print "temp_ctl$ctl_id.critical 90\n";
     }
 }
 
 sub get_controllers {
-    $STORCLI = find_storcli() unless $STORCLI;
-    return unless $STORCLI;
-    
     my $output = `$STORCLI show J 2>/dev/null`;
     return unless $output;
     
@@ -74,7 +83,6 @@ sub get_controllers {
 }
 
 sub get_temperatures {
-    $STORCLI = find_storcli() unless $STORCLI;
     return unless $STORCLI;
     
     my %temps;
@@ -111,12 +119,7 @@ sub fetch {
     }
 }
 
-sub dirtyconfig {
-    config();
-    fetch();
-}
-
-my $mode = shift || die "Usage: $0 <autoconf|config|fetch|dirtyconfig>\n";
+my $mode = shift || 'fetch';
 
 if ($mode eq 'autoconf') {
     autoconf();
@@ -124,8 +127,6 @@ if ($mode eq 'autoconf') {
     config();
 } elsif ($mode eq 'fetch') {
     fetch();
-} elsif ($mode eq 'dirtyconfig') {
-    dirtyconfig();
 } else {
-    die "Unknown mode: $mode\n";
+    die "Usage: $0 <autoconf|config|fetch>\n";
 }
