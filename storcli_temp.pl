@@ -5,8 +5,24 @@ use warnings;
 
 # Munin plugin for monitoring MegaRAID controller temperatures
 
+my $STORCLI;
+
+sub find_storcli {
+    if (-x '/usr/bin/storcli64') {
+        return '/usr/bin/storcli64';
+    } elsif (-x '/opt/MegaRAID/storcli/storcli64') {
+        return '/opt/MegaRAID/storcli/storcli64';
+    }
+    return undef;
+}
+
 sub autoconf {
-    print "yes\n";
+    $STORCLI = find_storcli();
+    if ($STORCLI) {
+        print "yes\n";
+    } else {
+        print "no (storcli64 not found)\n";
+    }
 }
 
 sub config {
@@ -18,7 +34,10 @@ sub config {
 }
 
 sub fetch {
-    my $output = `storcli /call/eall/show all`;  # command to retrieve data from MegaRAID
+    $STORCLI = find_storcli();
+    return unless $STORCLI;
+    
+    my $output = `$STORCLI /call/eall/show all`;  # command to retrieve data from MegaRAID
     my @lines = split /\n/, $output;
     my $temp;
 
@@ -29,7 +48,7 @@ sub fetch {
         }
     }
 
-    print "temp.value $temp\n";
+    print "temp.value $temp\n" if defined $temp;
 }
 
 sub dirtyconfig {
