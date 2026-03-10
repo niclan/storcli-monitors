@@ -3,9 +3,6 @@
 use strict;
 use warnings;
 
-use Sys::Sysinfo;
-use POSIX;  # For floor function
-
 # Munin plugin for monitoring MegaRAID controller temperatures
 
 sub autoconf {
