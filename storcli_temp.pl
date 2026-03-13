@@ -39,7 +39,7 @@ sub config {
 	    
     print "graph_title MegaRAID Controller Temperatures\n";
     print "graph_vlabel Temperature (°C)\n";
-    print "graph_category raid\n";
+    print "graph_category sensors\n";
     print "graph_info This graph shows the temperature of MegaRAID controllers\n";
     
     my @controllers = get_controllers();
